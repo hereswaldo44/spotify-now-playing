@@ -1,30 +1,11 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const token = await getAccessToken();
-
-  const response = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (response.status === 204) {
-    return res.json({ isPlaying: false, debug: 'spotify returned 204 - nothing playing' });
-  }
-
-  if (response.status > 400) {
-    return res.json({ isPlaying: false, debug: `spotify error ${response.status}` });
-  }
-
-  const song = await response.json();
-  return res.json({ isPlaying: song.is_playing, raw: song?.item?.name ?? 'no item', song });
-}
-
-async function getAccessToken() {
   const basic = Buffer.from(
     `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
   ).toString('base64');
 
-  const response = await fetch('https://accounts.spotify.com/api/token', {
+  const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: {
       Authorization: `Basic ${basic}`,
@@ -36,6 +17,15 @@ async function getAccessToken() {
     }),
   });
 
-  const data = await response.json();
-  return data.access_token;
+  const tokenData = await tokenRes.json();
+
+  return res.json({
+    tokenStatus: tokenRes.status,
+    hasAccessToken: !!tokenData.access_token,
+    tokenError: tokenData.error ?? null,
+    tokenErrorDesc: tokenData.error_description ?? null,
+    clientIdPresent: !!process.env.SPOTIFY_CLIENT_ID,
+    secretPresent: !!process.env.SPOTIFY_CLIENT_SECRET,
+    refreshTokenPresent: !!process.env.SPOTIFY_REFRESH_TOKEN,
+  });
 }
