@@ -29,8 +29,7 @@ export default async function handler(req, res) {
   return res.json({
     isReading: true,
     title,
-    author: author ?? null,
+    author: author?.replace(/&apos;/g, "'").replace(/&amp;/g, '&') ?? null,
     cover: cover ?? null,
-    bookUrl: link ?? null,
+    bookUrl: link?.replace(/<!\[CDATA\[/, '').replace(/\]\]>/, '') ?? null,
   });
-}
